@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         超强力水印拦截器【宝安版】
 // @namespace    http://tampermonkey.net/
-// @version      4.2
+// @version      4.6
 // @description  去水印，整页截图后进行 Canvas 像素级水印检测
 // @author       龙
 // @match        *://*/*
