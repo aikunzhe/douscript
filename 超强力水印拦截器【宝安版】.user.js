@@ -7968,7 +7968,7 @@
     'use strict';
 
 //只要 URL 里包含  才继续执行
-const allowKeys = ['szfn', 'main.action'];
+const allowKeys = ['szfn', ];
 
 if (!allowKeys.some(k => location.href.includes(k))) {
     return;
