@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         超强力水印拦截器【宝安版】
 // @namespace    http://tampermonkey.net/
-// @version      4.6
+// @version      4.8
 // @description  去水印，整页截图后进行 Canvas 像素级水印检测
 // @author       龙
 // @match        *://*/*
@@ -10,6 +10,15 @@
 // @license      All Rights Reserved
 // ==/UserScript==
 
+
+
+(function () {
+//只要 URL 里包含  才继续执行
+const allowKeys = ['szfn','szb','szfn','zhzlpt', '6.44.169', ];
+
+if (!allowKeys.some(k => location.href.includes(k))) {
+    return;
+}
 
 
 /*!
@@ -7967,12 +7976,6 @@
 (function () {
     'use strict';
 
-//只要 URL 里包含  才继续执行
-const allowKeys = ['szfn', ];
-
-if (!allowKeys.some(k => location.href.includes(k))) {
-    return;
-}
 
 
     // 你原来的 functionsList & modesListOperations 逻辑
@@ -8410,15 +8413,8 @@ await new Promise(resolve => setTimeout(resolve, 0));
     createDraggableDetectButton();
 
     console.log('[SS] 截图脚本已加载：右下角“检测暗水印”按钮（可拖拽）');
-
-
-
-
-
-
-
     console.log('[SS] 截图脚本已加载 ');
 })();
 
 
-
+})();
