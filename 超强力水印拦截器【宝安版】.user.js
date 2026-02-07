@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         超强力水印拦截器【宝安版】
 // @namespace    http://tampermonkey.net/
-// @version      4.0
-// @description  整页截图后进行 Canvas 像素级水印检测）
+// @version      4.1
+// @description  去水印，整页截图后进行 Canvas 像素级水印检测
 // @author       龙
 // @match        *://*/*
 // @grant        none
@@ -7886,8 +7886,13 @@
 (function () {
     'use strict';
 
-//只要 URL 里包含 szfn
-if (!location.href.includes('szfn')) return;
+//只要 URL 里包含  才继续执行
+const allowKeys = ['szfn', 'main.action'];
+
+if (!allowKeys.some(k => location.href.includes(k))) {
+    return;
+}
+
 
     // 你原来的 functionsList & modesListOperations 逻辑
  const functionsList= {
