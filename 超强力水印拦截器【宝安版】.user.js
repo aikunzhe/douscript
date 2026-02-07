@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         超强力水印拦截器【宝安版】
 // @namespace    http://tampermonkey.net/
-// @version      4.1
+// @version      4.2
 // @description  去水印，整页截图后进行 Canvas 像素级水印检测
 // @author       龙
 // @match        *://*/*
@@ -7878,6 +7878,87 @@
 })();
 
 
+//三、场景 清除body的水印
+(function () {
+  function clearBgWatermark(el) {
+    if (!el) return;
+    const cs = window.getComputedStyle(el);
+
+    // 1) 清 background-image（重点：水印大多塞在这里）
+    const bgImg = cs.backgroundImage || '';
+    if (bgImg && bgImg !== 'none') {
+      // 如果你只想清 dataURL 水印，可以把判断改成 bgImg.startsWith('url("data:image')
+      el.style.backgroundImage = 'none';
+      // 顺手清一下 background（有的库直接写 background）
+      el.style.background = '';
+    }
+
+    // 2) 清 mask / filter（少数实现会用）
+    el.style.webkitMaskImage = 'none';
+    el.style.maskImage = 'none';
+    el.style.filter = '';
+  }
+
+  function removeOverlayWatermarkNodes(root) {
+    root = root || document;
+
+    const candidates = root.querySelectorAll(
+      'canvas, svg, div, img'
+    );
+
+    candidates.forEach(node => {
+      // 只删“像水印”的：fixed/absolute + pointer-events:none + 超大覆盖 + 低透明度
+      const cs = window.getComputedStyle(node);
+      const pos = cs.position;
+      const pe = cs.pointerEvents;
+      const op = parseFloat(cs.opacity || '1');
+
+      const isOverlay = (pos === 'fixed' || pos === 'absolute') &&
+                        pe === 'none' &&
+                        (node.offsetWidth >= window.innerWidth * 0.6 || node.offsetHeight >= window.innerHeight * 0.6) &&
+                        op <= 0.8;
+
+      // 也兼容一些库会给 id/class 取名 watermark
+      const idc = (node.id + ' ' + node.className).toLowerCase();
+      const nameHit = idc.includes('watermark') || idc.includes('wm') || idc.includes('mark');
+
+      // canvas 常见：尺寸巨大 + 覆盖层
+      const isCanvasOverlay = node.tagName === 'CANVAS' && (pos === 'fixed' || pos === 'absolute') &&
+                              (node.width >= window.innerWidth * 0.6 || node.height >= window.innerHeight * 0.6);
+
+      if (isOverlay || nameHit || isCanvasOverlay) {
+        node.remove();
+      }
+    });
+  }
+
+  function removeWatermarkOnce() {
+    clearBgWatermark(document.documentElement);
+    clearBgWatermark(document.body);
+
+    removeOverlayWatermarkNodes(document);
+
+    // 额外：有的 watermark 插件把 dataURL 写到 body 的 style 属性里
+    if (document.body && document.body.getAttribute('style')) {
+      const style = document.body.getAttribute('style');
+      if (style && style.includes('data:image')) {
+        // 直接移除 background-image 相关片段（保守处理）
+        document.body.style.backgroundImage = 'none';
+      }
+    }
+  }
+
+  // 先执行一次
+  removeWatermarkOnce();
+
+  // 持续监听：水印脚本后续重绘/追加也干掉
+  const mo = new MutationObserver(() => removeWatermarkOnce());
+  mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'id'] });
+
+  // 给你一个手动按钮/函数（可选）
+  window.__wm_remove_watermark__ = removeWatermarkOnce;
+})();
+
 
 
 
@@ -8047,11 +8128,42 @@ if (!allowKeys.some(k => location.href.includes(k))) {
         }
     };
 
-    async function screenshotAndPopup() {
+    async function screenshotAndPopup1() {
         const canvas = await html2canvas(document.body, { useCORS: true, scale: 1, backgroundColor: '#fff' });
         showPopup(canvas);
     }
 
+
+    // ==========================================================
+    // ✅ 关键修复：backgroundColor 改为 null（保留 body 背景水印）
+    // ==========================================================
+    async function screenshotAndPopup() {
+        const root = document.documentElement; // 更稳，能包含 body 背景/视口范围
+        const width = Math.max(root.scrollWidth, document.body ? document.body.scrollWidth : 0);
+        const height = Math.max(root.scrollHeight, document.body ? document.body.scrollHeight : 0);
+
+        const canvas = await html2canvas(root, {
+            useCORS: true,
+            scale: 1,
+
+            // ✅ 必须：不要强制白底，否则 body 背景水印会被覆盖掉
+            backgroundColor: null,
+
+            // ✅ 全页尺寸（避免只截可视区域导致水印缺失/裁切）
+            width,
+            height,
+            windowWidth: width,
+            windowHeight: height,
+
+            // ✅ 保证从页面顶部开始渲染
+            scrollX: 0,
+            scrollY: 0,
+        });
+
+        showPopup(canvas);
+    }
+
+    
     function showPopup(srcCanvas) {
         // 移除旧弹窗
         const old = document.getElementById('__wm_popup__');
