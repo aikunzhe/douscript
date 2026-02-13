@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         超强力水印拦截器【宝安版】
 // @namespace    http://tampermonkey.net/
-// @version      4.8
+// @version      4.9
 // @description  去水印，整页截图后进行 Canvas 像素级水印检测
 // @author       龙
 // @match        *://*/*
@@ -10,11 +10,28 @@
 // @license      All Rights Reserved
 // ==/UserScript==
 
+/**
+ * ==============================
+ * 更新日志（Changelog）
+ * ==============================
+ *
+ * v4.9  - 2026-02-13
+ * 1.添加2个系统的去水印
+ *
+ * v4.8
+ * 1. 增加 LSB 像素检测机制
+ * 2. 提高水印识别准确率
+ *
+ * v4.7
+ * 1. 优化 DOM 层级过滤策略
+ * 2. 提升运行性能
+ *
+ */
 
 
 (function () {
 //只要 URL 里包含  才继续执行
-const allowKeys = ['szfn','szb','szfn','zhzlpt', '6.44.169', ];
+const allowKeys = ['szfn','szb','szfn','zhzlpt', '6.44.169', 'VueForKhala', 'zhzlpt', ];
 
 if (!allowKeys.some(k => location.href.includes(k))) {
     return;
